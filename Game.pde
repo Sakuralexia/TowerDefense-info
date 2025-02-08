@@ -9,6 +9,9 @@ class Game {
   int enemiesLeftToSpawn;
   int spawnTimer = 0;
   boolean waveActive = false;
+  boolean[][] pathGrid;
+  String errorMessage = "";
+  int errorMessageTimer = 0;
 
   Game() {
     enemies = new ArrayList<Enemy>();
@@ -16,8 +19,67 @@ class Game {
     bullets = new ArrayList<Bullet>();
     points = 100;
     lives = 10;
+    initializePathGrid();
     startNewWave();
   }
+
+  void initializePathGrid() {
+    pathGrid = new boolean[width / gridSize][height / gridSize];
+    updatePathGrid();
+  }
+
+  void updatePathGrid() {
+  // Resetta la griglia a false
+  for (int i = 0; i < pathGrid.length; i++) {
+    for (int j = 0; j < pathGrid[i].length; j++) {
+      pathGrid[i][j] = false;
+    }
+  }
+
+  // Segna come "occupate" le celle lungo il percorso dei nemici
+  for (Enemy e : enemies) {
+    for (int i = 0; i < e.path.length - 1; i++) {
+      int[] start = e.path[i];
+      int[] end = e.path[i + 1];
+      
+      // Calcoliamo i punti intermedi tra i due
+      int x1 = start[0] / gridSize;
+      int y1 = start[1] / gridSize;
+      int x2 = end[0] / gridSize;
+      int y2 = end[1] / gridSize;
+
+      // Disegna una "linea" tra i due punti (x1, y1) e (x2, y2) e segna le celle
+      markCellsAlongPath(x1, y1, x2, y2);
+    }
+  }
+}
+
+void markCellsAlongPath(int x1, int y1, int x2, int y2) {
+  // Utilizza la bresenham line algorithm per segnare tutte le celle
+  int dx = abs(x2 - x1);
+  int dy = abs(y2 - y1);
+  int sx = x1 < x2 ? 1 : -1;
+  int sy = y1 < y2 ? 1 : -1;
+  int err = dx - dy;
+
+  while (true) {
+    // Segna la cella attuale come occupata
+    pathGrid[x1][y1] = true;
+
+    // Se siamo arrivati alla fine del percorso, usciamo
+    if (x1 == x2 && y1 == y2) break;
+
+    int e2 = err * 2;
+    if (e2 > -dy) {
+      err -= dy;
+      x1 += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y1 += sy;
+    }
+  }
+}
 
   void startNewWave() {
     waveActive = true;
@@ -39,6 +101,8 @@ class Game {
         startNewWave();
       }
     }
+
+    updatePathGrid();
 
     for (Tower t : towers) {
       t.shoot(enemies, bullets);
@@ -68,6 +132,11 @@ class Game {
         bullets.remove(i);
       }
     }
+
+    if (errorMessageTimer > 0) {
+      showErrorMessage();
+      errorMessageTimer--;
+    }
   }
 
   void display() {
@@ -95,31 +164,35 @@ class Game {
     text("Ondata: " + wave, width - 10, 30);
     text("Vite: " + lives, width - 10, 50);
     text("Punti per torre: " + 50, width - 10, 70);
+
+    if (errorMessageTimer > 0) {
+      showErrorMessage();
+    }
   }
 
   void drawGrid() {
     stroke(0);
     noFill();
     for (int i = 0; i < width; i += gridSize) {
-        for (int j = 0; j < height; j += gridSize) {
-            rect(i, j, gridSize, gridSize);
-        }
+      for (int j = 0; j < height; j += gridSize) {
+        rect(i, j, gridSize, gridSize);
+      }
     }
   }
 
   void drawPath() {
     for (Enemy e : enemies) {
-        stroke(150, 100, 50);
-        strokeWeight(10);
-        noFill();
+      stroke(150, 100, 50);
+      strokeWeight(10);
+      noFill();
 
-        beginShape();
-        for (int i = 0; i < e.path.length; i++) {
-            vertex(e.path[i][0], e.path[i][1]);
-        }
-        endShape();
-        
-        strokeWeight(1);
+      beginShape();
+      for (int i = 0; i < e.path.length; i++) {
+        vertex(e.path[i][0], e.path[i][1]);
+      }
+      endShape();
+
+      strokeWeight(1);
     }
   }
 
@@ -131,28 +204,24 @@ class Game {
     text("GAME OVER", width / 2, height / 2);
   }
 
-  void placeTower(int x, int y) {
-    int gridX = floor(x / gridSize) * gridSize;
-    int gridY = floor(y / gridSize) * gridSize;
+  boolean isValidPosition(int gridX, int gridY) {
+  // Verifica che la posizione non sia lungo il percorso dei nemici
+  return !pathGrid[gridX][gridY];
+}
 
-    if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height && points >= 50 && isValidPosition(gridX, gridY) && !towerAtPosition(gridX, gridY)) {
-      towers.add(new Tower(gridX + gridSize / 2, gridY + gridSize / 2));  
-      points -= 50;
-    }
-  }
+void placeTower(int x, int y) {
+  int gridX = floor(x / gridSize);
+  int gridY = floor(y / gridSize);
 
-  boolean isValidPosition(int x, int y) {
-    for (Enemy e : enemies) {
-      for (int[] point : e.path) {
-        int pathX = point[0];
-        int pathY = point[1];
-        if (dist(x, y, pathX, pathY) < gridSize / 2) {
-          return false;
-        }
-      }
-    }
-    return true;
+  // Verifica che la posizione sia valida (non lungo il percorso del nemico)
+  if (gridX >= 0 && gridX < width / gridSize && gridY >= 0 && gridY < height / gridSize && points >= 50 && isValidPosition(gridX, gridY) && !towerAtPosition(gridX, gridY)) {
+    towers.add(new Tower(gridX * gridSize + gridSize / 2, gridY * gridSize + gridSize / 2));
+    points -= 50;
+  } else if (!isValidPosition(gridX, gridY)) {
+    errorMessage = "Non puoi piazzare una torre sul percorso del nemico!";
+    errorMessageTimer = 180; // Durata del messaggio di errore in frame
   }
+}
 
   boolean towerAtPosition(int x, int y) {
     for (Tower t : towers) {
@@ -161,5 +230,12 @@ class Game {
       }
     }
     return false;
+  }
+
+  void showErrorMessage() {
+    fill(255, 0, 0);  // Colore rosso
+    textSize(16);
+    textAlign(CENTER, TOP);
+    text(errorMessage, width / 2, 10);  // Posizione in alto al centro
   }
 }
