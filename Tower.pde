@@ -1,6 +1,6 @@
 class Tower {
   float x, y;
-  int fireRate = 60;
+  int fireRate = 70;
   int lastShot = 0;
 
   Tower(float x, float y) {

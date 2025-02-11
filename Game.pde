@@ -28,55 +28,67 @@ class Game {
 
   void startNewWave() {
     waveActive = true;
-    enemiesLeftToSpawn = min(3 + wave, 15);
+    enemiesLeftToSpawn = min(5 + wave * 2, 30); // Aumenta il numero di nemici, massimo 30 per round
+    spawnTimer = 0;
   }
 
-  void update() {
-    if (waveActive) {
-      if (enemiesLeftToSpawn > 0 && spawnTimer % 60 == 0) {
-        enemies.add(new Enemy(gridSize, gridSize / 2, gridSize / 2));
-        enemiesLeftToSpawn--;
-      }
-      spawnTimer++;
 
-      if (enemies.isEmpty() && enemiesLeftToSpawn == 0) {
-        wave++;
-        startNewWave();
-      }
+  void update() {
+    if(wave >10){
+      victory();
+      return;
+    }
+    if (waveActive) {
+        if (enemiesLeftToSpawn > 0 && spawnTimer % 60 == 0) {
+            if (wave > 3 && random(1) < 0.2 + (wave * 0.02)) { 
+                // Dopo il terzo round, aumenta la probabilità di SlowEnemy (fino al 50% dopo 10 round)
+                enemies.add(new SlowEnemy(gridSize, gridSize / 2, gridSize / 2));
+            } else {
+                enemies.add(new Enemy(gridSize, gridSize / 2, gridSize / 2));
+            }
+            enemiesLeftToSpawn--;
+        }
+        spawnTimer++;
+
+        if (enemies.isEmpty() && enemiesLeftToSpawn == 0) {
+            wave++;
+            startNewWave();
+        }
     }
 
     gridManager.updatePathGrid(enemies);
     errorManager.update();
 
     for (Tower t : towers) {
-      t.shoot(enemies, bullets);
+        t.shoot(enemies, bullets);
     }
 
     for (int i = enemies.size() - 1; i >= 0; i--) {
-      Enemy e = enemies.get(i);
-      e.move();
-      if (e.hp <= 0) {
-        enemies.remove(i);
-        points += 10;
-      }
+        Enemy e = enemies.get(i);
+        e.move();
 
-      if (e.step == e.path.length - 1) {
-        enemies.remove(i);
-        lives--;
-        if (lives <= 0) {
-          gameOver();
+        if (e.hp <= 0) {
+            enemies.remove(i);
+            points += (e instanceof SlowEnemy) ? 10 : 7;
+        } else if (e.step == e.path.length - 1) {
+            enemies.remove(i);
+            lives--;
+            if (lives <= 0) {
+                gameOver();
+            }
         }
-      }
     }
 
     for (int i = bullets.size() - 1; i >= 0; i--) {
-      Bullet b = bullets.get(i);
-      b.move();
-      if (b.hit) {
-        bullets.remove(i);
-      }
+        Bullet b = bullets.get(i);
+        b.move();
+        if (b.hit) {
+            bullets.remove(i);
+        }
     }
-  }
+}
+
+
 
   void display() {
   background(255);
@@ -118,12 +130,21 @@ class Game {
     textAlign(CENTER, CENTER);
     text("GAME OVER", width / 2, height / 2);
   }
+  
+  void victory() {
+    noLoop();
+    textSize(32);
+    fill(0, 200, 0);
+    textAlign(CENTER, CENTER);
+    text("HAI VINTO!", width / 2, height / 2);
+  }
+
 
   void placeTower(int x, int y) {
     int gridX = floor(x / gridSize);
     int gridY = floor(y / gridSize);
 
-    // Calcoliamo il centro del quadrato nella griglia
+    // Calcola il centro del quadrato nella griglia
     int centerX = gridX * gridSize + gridSize / 2;
     int centerY = gridY * gridSize + gridSize / 2;
 

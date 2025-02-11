@@ -33,7 +33,7 @@ class GridManager {
       endShape();
     }
 
-    strokeWeight(1);  // Ripristina lo spessore normale
+    strokeWeight(1);
   }
   void updatePathGrid(ArrayList<Enemy> enemies) {
     for (int i = 0; i < pathGrid.length; i++) {
