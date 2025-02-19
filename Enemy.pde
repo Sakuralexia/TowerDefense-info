@@ -1,3 +1,5 @@
+import processing.sound.*;
+
 class Enemy {
   float x, y, speed;
   int hp;
@@ -5,8 +7,9 @@ class Enemy {
   boolean isDead;
   int gridSize;
   int[][] path;
+  SoundFile deathSound;
 
-  Enemy(int gridSize, float startX, float startY) {
+  Enemy(int gridSize, float startX, float startY, SoundFile deathSound) {
     this.gridSize = gridSize;
     this.x = startX;
     this.y = startY;
@@ -23,6 +26,7 @@ class Enemy {
       {600 + gridSize / 2, 400 + gridSize / 2},
       {width - gridSize / 2, 400 + gridSize / 2}
     };
+    this.deathSound = deathSound;
   }
 
   void move() {
@@ -42,8 +46,9 @@ class Enemy {
 
   void takeDamage() {
     hp--;
-    if (hp <= 0) {
+    if (hp <= 0 && !isDead) {
       isDead = true;
+      deathSound.play();
     }
   }
 

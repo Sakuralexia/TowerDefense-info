@@ -1,7 +1,7 @@
 class SlowEnemy extends Enemy {
   
-  SlowEnemy(int gridSize, float startX, float startY) {
-    super(gridSize, startX, startY);
+  SlowEnemy(int gridSize, float startX, float startY, SoundFile deathSound) {
+    super(gridSize, startX, startY,deathSound);
     this.hp = 5;
     this.speed = 1.5 * 0.75; // 25% più lento del normale
   }

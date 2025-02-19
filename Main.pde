@@ -1,8 +1,13 @@
+import processing.sound.*;
+
 Game game;
+SoundFile deathSound;
 
 void setup() {
   size(800, 600);
-  game = new Game();
+ 
+  deathSound = new SoundFile(this, "damage_sound.mp3");
+  game = new Game(deathSound);
 }
 
 void draw() {
