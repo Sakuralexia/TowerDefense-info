@@ -54,3 +54,21 @@ La classe principale del programma inizializza il gioco e gestisce l’input del
 
 ## Problematiche nel Processo di Sviluppo
 All’inizio il progetto procedeva senza problemi, ma una volta affrontate le parti più complesse ho dovuto modificare il codice molte volte per testare i cambiamenti in tempo reale. Dopo vari tentativi, il gioco è diventato più fluido, anche se non del tutto ottimizzato. Quando sono riuscita a sistemare le classi principali e mi sono concentrata sull’estensione del codice per creare nuovi nemici e bilanciare il gameplay con piccoli dettagli, il lavoro è diventato più gestibile e lineare.
+
+---
+
+### **Requisiti Funzionali**  
+- Il gioco deve permettere di posizionare torri sulla griglia.  
+- I nemici devono seguire un percorso predefinito.  
+- Le torri devono attaccare automaticamente i nemici nel loro raggio d’azione.  
+- I proiettili devono colpire e infliggere danno ai nemici.  
+- Il gioco deve gestire più ondate di nemici con difficoltà crescente.  
+- Deve esserci una condizione di vittoria e sconfitta.  
+
+### **Requisiti Non Funzionali**  
+- Il gioco deve essere fluido e responsivo.  
+- Il codice deve essere organizzato in classi per una facile estensibilità.  
+- L’interfaccia deve essere intuitiva e leggibile.  
+- Il sistema deve fornire feedback visivi per azioni come attacchi e danni.  
+- Deve essere compatibile con Processing.  
+
