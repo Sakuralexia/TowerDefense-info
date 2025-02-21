@@ -7,14 +7,14 @@ class Game {
   GridManager gridManager;
   ErrorManager errorManager;
   PositionManager positionManager;
-  int points;
-  int lives;
+  int points,lives;
   int gridSize = 40;
   int wave = 1;
   float enemiesLeftToSpawn;
   int spawnTimer = 0;
   boolean waveActive = false;
-
+  boolean gameOver = false;
+  boolean gameWon = false;
   int towerCost = 40; // Costo iniziale ridotto
   int towerCostIncrease = 12; // Incremento più graduale
 
@@ -50,92 +50,82 @@ class Game {
     spawnTimer = 0;
   }
 
+void update() {
+    if (gameOver || gameWon) return;
 
-
-
-  void update() {
-    if (wave > 10) {
-      victory();
-      return;
+    if (lives <= 0) {
+        gameOver();
+        return;
     }
-
-    if (waveActive) {
-  if (enemiesLeftToSpawn > 0 && spawnTimer % 60 == 0) {
-    if (wave == 10) {
-      enemies.add(new BossEnemy(gridSize, gridSize / 2, gridSize / 2, deathSound));
-    } else {
-      float rand = random(1);
-      if (wave > 5 && rand < 0.15 + (wave * 0.01)) { 
-        enemies.add(new FastEnemy(gridSize, gridSize / 2, gridSize / 2, deathSound)); 
-      } else if (wave > 3 && rand < 0.2 + (wave * 0.02)) { 
-        enemies.add(new SlowEnemy(gridSize, gridSize / 2, gridSize / 2, deathSound)); 
-      } else {
-        enemies.add(new Enemy(gridSize, gridSize / 2, gridSize / 2, deathSound)); 
-      }
+    if (wave > 10 && enemies.isEmpty() && enemiesLeftToSpawn == 0) {
+        victory();
+        return;
     }
-    enemiesLeftToSpawn--;
-  }
-  spawnTimer++;
-
-      if (enemies.isEmpty() && enemiesLeftToSpawn == 0) {
-        wave++;
-        startNewWave();
-      }
+    if (waveActive && enemiesLeftToSpawn > 0 && spawnTimer % 60 == 0) {
+        spawnEnemy();
+        enemiesLeftToSpawn--;
+    }
+    spawnTimer++;
+    if (waveActive && enemies.isEmpty() && enemiesLeftToSpawn == 0) {
+        if (++wave <= 10) startNewWave();
     }
 
     gridManager.updatePathGrid(enemies);
     errorManager.update();
-
-    for (Tower t : towers) {
-      t.shoot(enemies, bullets);
-    }
+    for (Tower t : towers) t.shoot(enemies, bullets);
 
     for (int i = enemies.size() - 1; i >= 0; i--) {
-      Enemy e = enemies.get(i);
-      e.move();
+        Enemy e = enemies.get(i);
+        e.move();
+        if (e.hp <= 0) {
+            enemies.remove(i);
+            deathSound.play();
+            points += (e instanceof SlowEnemy) ? 8 : (e instanceof FastEnemy) ? 7 : 6;
+        } else if (e.step == e.path.length - 1) {
+            enemies.remove(i);
+            if (--lives <= 0) {
+                gameOver();
+                return;
+            }
+        }
+    }
 
-      if (e.hp <= 0) {
-        enemies.remove(i);
-        deathSound.play();
-        if (e instanceof SlowEnemy) {
-          points += 8; // Ricompensa ridotta
-        } else if (e instanceof FastEnemy) {
-          points += 7; // Maggiore per compensare la difficoltà
+    bullets.removeIf(b -> {
+        b.move();
+        return b.hit;
+    });
+}
+
+void spawnEnemy() {
+    if (wave == 10) {
+        enemies.add(new BossEnemy(gridSize, gridSize / 2, gridSize / 2, deathSound));
+    } else {
+        float rand = random(1);
+        if (wave > 5 && rand < 0.15 + (wave * 0.01)) {
+            enemies.add(new FastEnemy(gridSize, gridSize / 2, gridSize / 2, deathSound));
+        } else if (wave > 3 && rand < 0.2 + (wave * 0.02)) {
+            enemies.add(new SlowEnemy(gridSize, gridSize / 2, gridSize / 2, deathSound));
         } else {
-          points += 6; // Nemico base
+            enemies.add(new Enemy(gridSize, gridSize / 2, gridSize / 2, deathSound));
         }
-      } else if (e.step == e.path.length - 1) {
-        enemies.remove(i);
-        lives--;
-        if (lives <= 0) {
-          gameOver();
-        }
-      }
     }
+}
 
-    for (int i = bullets.size() - 1; i >= 0; i--) {
-      Bullet b = bullets.get(i);
-      b.move();
-      if (b.hit) {
-        bullets.remove(i);
-      }
-    }
-  }
 
-  void display() {
+void display() {
     background(255);
     gridManager.drawGrid();
     gridManager.drawPath(enemies);
     errorManager.showErrorMessage();
 
     for (Tower t : towers) {
-      t.display();
+        t.display();
     }
     for (Enemy e : enemies) {
-      e.display();
+        e.display();
     }
     for (Bullet b : bullets) {
-      b.display();
+        b.display();
     }
 
     fill(0);
@@ -145,22 +135,29 @@ class Game {
     text("Ondata: " + wave, width - 10, 30);
     text("Vite: " + lives, width - 10, 50);
     text("Costo torre: " + towerCost, width - 10, 70);
+
+    // Mostra il messaggio di vittoria o game over
+    if (gameOver) {
+        textSize(32);
+        fill(255, 0, 0);
+        textAlign(CENTER, CENTER);
+        text("GAME OVER", width / 2, height / 2);
+    } else if (gameWon) {
+        textSize(32);
+        fill(0, 200, 0);
+        textAlign(CENTER, CENTER);
+        text("HAI VINTO!", width / 2, height / 2);
+    }
   }
 
   void gameOver() {
+    gameOver = true; 
     noLoop();
-    textSize(32);
-    fill(255, 0, 0);
-    textAlign(CENTER, CENTER);
-    text("GAME OVER", width / 2, height / 2);
   }
 
   void victory() {
+    gameWon = true; 
     noLoop();
-    textSize(32);
-    fill(0, 200, 0);
-    textAlign(CENTER, CENTER);
-    text("HAI VINTO!", width / 2, height / 2);
   }
 
   void placeTower(int x, int y) {
