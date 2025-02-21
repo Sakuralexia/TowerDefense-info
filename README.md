@@ -71,4 +71,5 @@ All’inizio il progetto procedeva senza problemi, ma una volta affrontate le pa
 - L’interfaccia deve essere intuitiva e leggibile.  
 - Il sistema deve fornire feedback visivi per azioni come attacchi e danni.  
 - Deve essere compatibile con Processing.  
+![uml drawio](https://github.com/user-attachments/assets/dfd7dfeb-d3db-4c4e-9c49-9c02dc484ebf)
 
